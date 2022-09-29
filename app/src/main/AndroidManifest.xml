@@ -21,7 +21,7 @@
         android:theme="@style/Theme.Camera_x_test"
         tools:targetApi="31">
         <activity
-            android:name="com.android.example.cameraxapp.MainActivity"
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

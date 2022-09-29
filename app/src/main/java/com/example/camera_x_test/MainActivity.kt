@@ -1,4 +1,4 @@
-package com.android.example.cameraxapp
+package com.example.camera_x_test
 
 import android.os.Bundle
 import android.widget.Toast

@@ -3,6 +3,7 @@ package com.example.camera_x_test
 import android.Manifest
 import android.content.ContentValues
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -29,17 +30,14 @@ import com.example.camera_x_test.databinding.CaptureCameraPictureFragmentBinding
 import ironark.com.charge.utils.PermissionsManager
 import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.concurrent.ExecutorService
 
 class CaptureCameraPictureFragment : Fragment() {
 
     private lateinit var binding: CaptureCameraPictureFragmentBinding
-    private lateinit var cameraExecutor: ExecutorService
     private var cameraStarted = false
     private var imageCapture: ImageCapture? = null
     private var latestPictureUri: Uri? = null
     private lateinit var permissionManager: PermissionsManager
-    private var grantedPermisions = 0
 
     // Select back camera as a default
     private var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
@@ -107,6 +105,7 @@ class CaptureCameraPictureFragment : Fragment() {
     private fun hidePreviewContainer() {
         binding.previewImageContainer?.isVisible = false
         binding.cameraContainer?.isVisible = true
+        binding.viewFinder.isVisible = true
     }
 
     private fun initView() {
@@ -133,7 +132,7 @@ class CaptureCameraPictureFragment : Fragment() {
 
     private fun closeCameraFragment() {
         requireActivity().let {
-            parentFragmentManager.apply {
+            childFragmentManager.apply {
                 commit {
                     remove(this@CaptureCameraPictureFragment)
                 }
@@ -143,6 +142,11 @@ class CaptureCameraPictureFragment : Fragment() {
     }
 
     private fun grantedPermission() {
+        startCameraPreview()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
         startCameraPreview()
     }
 
@@ -160,7 +164,9 @@ class CaptureCameraPictureFragment : Fragment() {
                     it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
                 }
 
-            imageCapture = ImageCapture.Builder().build()
+            imageCapture = ImageCapture.Builder()
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                .build()
 
             try {
                 // Unbind use cases before rebinding
@@ -170,6 +176,8 @@ class CaptureCameraPictureFragment : Fragment() {
                 cameraProvider.bindToLifecycle(
                     this, cameraSelector, preview, imageCapture
                 )
+
+                binding.viewFinder.isVisible = true
 
             } catch (exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
@@ -181,6 +189,7 @@ class CaptureCameraPictureFragment : Fragment() {
 
     private fun takePicture() {
         if (!cameraStarted) return
+        binding.viewFinder.isVisible = true
         // Get a stable reference of the modifiable image capture use case
         val imageCapture = imageCapture ?: return
 
@@ -216,6 +225,7 @@ class CaptureCameraPictureFragment : Fragment() {
 
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     latestPictureUri = output.savedUri
+                    binding.viewFinder.isVisible = false
                     showPreviewImage(latestPictureUri)
                 }
             }
@@ -241,11 +251,6 @@ class CaptureCameraPictureFragment : Fragment() {
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(requireContext(), it) == PackageManager.PERMISSION_GRANTED
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        cameraExecutor.shutdown()
     }
 
     companion object {

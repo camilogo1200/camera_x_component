@@ -5,18 +5,21 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@color/black">
 
         <androidx.camera.view.PreviewView
             android:id="@+id/viewFinder"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            app:scaleType="fitCenter"
             tools:background="#FF0000" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/camera_container"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:background="#803700B3"
+            android:background="#80000000"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@id/camera_guideline_btns">
@@ -52,5 +55,55 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             app:layout_constraintGuide_percent="0.88" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/preview_image_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <ImageView
+                android:id="@+id/preview_image"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@string/photo_image_preview"
+                tools:background="#000000" />
+
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/preview_success_btn"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_marginBottom="12dp"
+                android:background="@android:color/transparent"
+                android:tint="#00ff00"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/preview_dismiss_btn"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@id/preview_guideline_btns"
+                app:srcCompat="@drawable/ic_check_circle" />
+
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/preview_dismiss_btn"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_marginBottom="12dp"
+                android:background="@android:color/transparent"
+                android:tint="#ff0000"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/preview_success_btn"
+                app:layout_constraintTop_toTopOf="@id/preview_guideline_btns"
+                app:srcCompat="@drawable/ic__clear" />
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/preview_guideline_btns"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                app:layout_constraintGuide_percent="0.85" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>
