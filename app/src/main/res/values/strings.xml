@@ -4,4 +4,5 @@
     <string name="start_capture">Start Capture</string>
     <string name="stop_capture">Stop Capture</string>
     <string name="toggle_camera">Toggle camera</string>
+    <string name="photo_image_preview">Photo image preview</string>
 </resources>

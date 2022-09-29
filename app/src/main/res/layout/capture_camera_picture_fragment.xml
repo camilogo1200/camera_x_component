@@ -5,12 +5,14 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@color/black">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/camera_container"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            tools:visibility="gone">
 
             <androidx.camera.view.PreviewView
                 android:id="@+id/viewFinder"
@@ -65,13 +67,14 @@
             android:id="@+id/preview_image_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-
-            android:visibility="gone">
+            android:visibility="gone"
+            tools:visibility="visible">
 
             <ImageView
                 android:id="@+id/preview_image"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:contentDescription="@string/photo_image_preview"
                 tools:background="#000000" />
 
             <androidx.appcompat.widget.AppCompatImageButton

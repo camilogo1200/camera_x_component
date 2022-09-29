@@ -12,13 +12,12 @@ import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
@@ -27,10 +26,10 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import androidx.fragment.app.setFragmentResult
 import com.example.camera_x_test.databinding.CaptureCameraPictureFragmentBinding
+import ironark.com.charge.utils.PermissionsManager
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 class CaptureCameraPictureFragment : Fragment() {
 
@@ -39,9 +38,20 @@ class CaptureCameraPictureFragment : Fragment() {
     private var cameraStarted = false
     private var imageCapture: ImageCapture? = null
     private var latestPictureUri: Uri? = null
+    private lateinit var permissionManager: PermissionsManager
+    private var grantedPermisions = 0
 
     // Select back camera as a default
     private var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+    private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        requireActivity().let {
+            permissionManager = PermissionsManager(it, it.activityResultRegistry)
+            lifecycle.addObserver(permissionManager)
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -77,13 +87,6 @@ class CaptureCameraPictureFragment : Fragment() {
                     HapticFeedbackConstants.VIRTUAL_KEY,
                     HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
                 )
-            }, 10L)
-
-            it.postDelayed({
-                requireActivity().window.decorView.performHapticFeedback(
-                    HapticFeedbackConstants.VIRTUAL_KEY,
-                    HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
-                )
             }, 1L)
             toggleCamera()
         }
@@ -92,11 +95,12 @@ class CaptureCameraPictureFragment : Fragment() {
     }
 
     private fun setImageResult() {
-        latestPictureUri?.path?.let {
+        latestPictureUri?.let {
             setFragmentResult(
                 CAPTURED_IMAGE_URI,
-                bundleOf(CAPTURED_IMAGE_URI to "${CAPTURED_MEDIA_PREFIX}${it}")
+                bundleOf(CAPTURED_IMAGE_URI to "$it")
             )
+            closeCameraFragment()
         }
     }
 
@@ -107,48 +111,39 @@ class CaptureCameraPictureFragment : Fragment() {
 
     private fun initView() {
         if (checkPermissions()) {
-            if (!cameraStarted) {
-                cameraExecutor = Executors.newSingleThreadExecutor()
-                startCameraPreview()
-            } else {
-                takePicture()
-            }
+            startCameraPreview()
         }
     }
 
     private fun checkPermissions(): Boolean {
         val permissionsGranted = allPermissionsGranted()
         if (!permissionsGranted) {
-            activity?.let {
-                ActivityCompat.requestPermissions(
-                    it, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
+            REQUIRED_PERMISSIONS.forEach {
+                permissionManager.requestPermission(
+                    it, ::grantedPermission, ::deniedListener
                 )
             }
         }
         return permissionsGranted
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int, permissions: Array<String>, grantResults:
-        IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            if (allPermissionsGranted()) {
-                startCameraPreview()
-            } else {
-                context?.let {
-                    Toast.makeText(
-                        it, "Permissions not granted by the user.", Toast.LENGTH_SHORT
-                    ).show()
+    private fun deniedListener() {
+        closeCameraFragment()
+    }
+
+    private fun closeCameraFragment() {
+        requireActivity().let {
+            parentFragmentManager.apply {
+                commit {
+                    remove(this@CaptureCameraPictureFragment)
                 }
-                activity?.let {
-                    it.supportFragmentManager.commit {
-                        remove(this@CaptureCameraPictureFragment)
-                    }
-                }
+                popBackStack()
             }
         }
+    }
+
+    private fun grantedPermission() {
+        startCameraPreview()
     }
 
     private fun startCameraPreview() {
@@ -185,6 +180,7 @@ class CaptureCameraPictureFragment : Fragment() {
     }
 
     private fun takePicture() {
+        if (!cameraStarted) return
         // Get a stable reference of the modifiable image capture use case
         val imageCapture = imageCapture ?: return
 
@@ -219,12 +215,6 @@ class CaptureCameraPictureFragment : Fragment() {
                 }
 
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    /*val msg = "Photo capture succeeded: ${output.savedUri}"
-                    context?.let {
-                        Toast.makeText(it, msg, Toast.LENGTH_SHORT).show()
-                        Log.d(TAG, msg)
-                    }
-                    */
                     latestPictureUri = output.savedUri
                     showPreviewImage(latestPictureUri)
                 }
@@ -233,10 +223,10 @@ class CaptureCameraPictureFragment : Fragment() {
     }
 
     private fun showPreviewImage(latestPictureUri: Uri?) {
-        binding.cameraContainer?.isVisible = false
-        binding.previewImageContainer?.isVisible = true
-        latestPictureUri?.path?.let {
-            binding.previewImage?.setImageURI(Uri.parse("$CAPTURED_MEDIA_PREFIX{it}"))
+        latestPictureUri?.let {
+            binding.previewImage?.setImageURI(it)
+            binding.cameraContainer?.isVisible = false
+            binding.previewImageContainer?.isVisible = true
         }
     }
 
@@ -260,14 +250,14 @@ class CaptureCameraPictureFragment : Fragment() {
 
     companion object {
         private const val CAPTURED_MEDIA_PREFIX = "content://media/"
-        private const val CAPTURED_IMAGE_URI = "image_captured"
+        const val CAPTURED_IMAGE_URI = "image_captured"
         private const val TAG = "CaptureCameraPicture"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS =
             mutableListOf(
-                Manifest.permission.CAMERA,
-                Manifest.permission.RECORD_AUDIO
+                Manifest.permission.CAMERA
+                //,Manifest.permission.RECORD_AUDIO
             ).apply {
                 if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
                     add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
