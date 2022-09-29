@@ -46,8 +46,8 @@ class PermissionsManager(
     fun requestPermission(
         permission: String,
         rationaleListener: ((String) -> Unit)? = null,
-        grantedListener: ((String) -> Unit)? = null,
-        deniedListener: ((String) -> Unit)? = null
+        grantedListener: (() -> Unit)? = null,
+        deniedListener: (() -> Unit)? = null
     ) {
         if (ActivityCompat.shouldShowRequestPermissionRationale(
                 activity, permission
